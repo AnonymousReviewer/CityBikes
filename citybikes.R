@@ -37,18 +37,29 @@ length(loyal_users)
 # should be 25,963
 
 # try filtering trips on adapted year
-trips %>% f
+yearly_users = user_duration$id_client[user_duration$maxnbdays>=365&user_duration$id_client!=(-1)]
+# 59542
+yearly_users = user_duration$id_client[user_duration$maxadaptedyear>1]
+# 59542
 
+loyal_users = user_duration$id_client[user_duration$maxnbdays>=3*365]
+# 20332
+
+ftrips =  trips %>% filter(id_client%in%yearly_users)
 
 ####
 # Table 1
 
-yearlycounts = trips %>% group_by(year) %>% summarize(
+ftrips %>% group_by(year) %>% summarize(
   trips = n(),
-  users = length(unique(id_client))
+  users = length(unique(id_client)),
+  trips_per_user = trips / users
 )
 
-
+ftrips %>% group_by(id_client,year) %>% summarize(ntrips = n()) %>% group_by(year) %>% summarize(
+  mediantrips = median(ntrips),
+  sdtrips = sd(ntrips)
+)
 
 
 
@@ -56,11 +67,15 @@ yearlycounts = trips %>% group_by(year) %>% summarize(
 ####
 # Table 2
 
-rownames(customers)<-customers$id_client
-
 customers$age_class = cut(customers$age,breaks = c(0,13,22,32,42,52,62,72,100))
 
-table(customers[loyal_users,c('age_class',"gender")])
+customers %>% filter(id_client%in%yearly_users) %>% group_by(age_class) %>% summarize(
+  nusers = n(),
+  nloyal = length(which(id_client%in%loyal_users)),
+  percentage_men = 100*length(which(gender=="Man"))/nusers,
+  percentage_loyal =100*nloyal / nusers,
+  percentage_loyal_men = 100*length(which(gender=="Man"&id_client%in%loyal_users))/nloyal
+)
 
 
 
